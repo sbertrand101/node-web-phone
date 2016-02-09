@@ -110,6 +110,7 @@ commands["signIn"] = function*(message, socket){
  * Get messages
  */
 commands["getMessages"] = function*(message, socket){
+  socket.userId = message.auth.userId;
   let client = getCatapultClient(message);
   debug("Get messages");
   let messages = (yield catapult.Message.list.bind(catapult.Message).promise(client, {size: 1000, from: message.data.phoneNumber, state: "sent"}))
@@ -128,6 +129,7 @@ commands["getMessages"] = function*(message, socket){
  * Send a message
  */
 commands["sendMessage"] = function*(message, socket){
+  socket.userId = message.auth.userId;
   let client = getCatapultClient(message);
   debug("Sending a  message");
   return yield catapult.Message.create.bind(catapult.Message).promise(client, message.data);
@@ -147,7 +149,8 @@ app.use(function*(next){
       let body = yield parse.json(this);      
       debug("Data from Catapult for %s: %j", userId, body);
       wss.clients.filter(function(c){ return c.userId === userId; }).forEach(function(client) {
-        emit(client, "new-message", body);
+        debug("Sending Catapult data to websocket client");
+        emit(client, "message", body);
       });
       this.body = "";
       return;
