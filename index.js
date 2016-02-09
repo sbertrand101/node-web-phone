@@ -1,3 +1,4 @@
+/* global Buffer */
 /* global process */
 "use strict";
 const debug = require("debug")("server");
@@ -6,13 +7,14 @@ const co = require("co");
 const parse = require("co-body");
 const catapult = require("node-bandwidth");
 const koa = require("koa");
+const koaStatic = require("koa-static");
 const http = require("http");
 
 require("promisify-patch").patch();
 
 let app = koa();
 let server = http.createServer(app.callback());
-let wss = new ws.Server({ server: server });
+let wss = new ws.Server({ server: server, path: "/smschat" });
 
 let commands = {};
 
@@ -30,10 +32,9 @@ function emit(socket, eventName, data) {
   }));
 }
 
-server.on("connection", function (socket) {
-  console.log(wss.clients);
-  
-  debug("Connected new client");
+
+wss.on("connection", function (socket) {
+  debug("Connected new websocket client");
   socket.on("message", function (json) {
     debug("Received new message %s", json);
     let message = {};
@@ -52,6 +53,7 @@ server.on("connection", function (socket) {
       let error = `Command ${message.command} is not implemented`;
       console.error(error);
       sendError(error);
+      return;
     }
     debug("Executing command %s with data %j", message.command, message.data)
     co(handler(message, socket)).then(function (result) {
@@ -69,6 +71,7 @@ server.on("connection", function (socket) {
 commands["signIn"] = function*(message, socket){
    message.auth = message.data;
    let client = getCatapultClient(message);
+   const applicationName = `web-sms-chat on ${socket.upgradeReq.headers.host}`;
    debug("Getting account's balance");
    let result = yield catapult.Account.get.bind(catapult.Account).promise(client);
    if(result.balance <= 0){
@@ -77,12 +80,12 @@ commands["signIn"] = function*(message, socket){
    debug("Getting application id");
    let applicationId = ((yield catapult.Application.list.bind(catapult.Application).promise(client, {size: 1000}))
     .filter(function(app){
-      return app.name == APPLICATION_NAME;
+      return app.name == applicationName;
     })[0] || {}).id;
    if(!applicationId){
       debug("Creating new application on Catapult");
-      applicationId = (yield this.catapult.Application.create.bind(this.catapult.Application).promise({
-        name: APPLICATION_NAME,
+      applicationId = (yield catapult.Application.create.bind(catapult.Application).promise(client, {
+        name: applicationName,
         incomingMessageUrl: `http://${socket.upgradeReq.headers.host}/${message.auth.userId}/callback`
       })).id;
    }
@@ -92,8 +95,8 @@ commands["signIn"] = function*(message, socket){
    if(!phoneNumber){
      debug("Reserving new phone number on Catapult");
      let number = ((yield catapult.AvailableNumber.searchLocal.bind(catapult.AvailableNumber)
-      .promise({city: "Cary", state: "NC", quantity: 1}))[0] || {}).number;
-     yield catapult.PhoneNumber.create.bind(catapult.PhoneNumber).promise({number: number, applicationId: applicationId});
+      .promise(client, {city: "Cary", state: "NC", quantity: 1}))[0] || {}).number;
+     yield catapult.PhoneNumber.create.bind(catapult.PhoneNumber).promise(client, {number: number, applicationId: applicationId});
      phoneNumber = number; 
    }
    socket.userId = message.auth.userId;
@@ -114,7 +117,7 @@ commands["sendMessage"] = function*(message, socket){
 
 
 
-//handle callbacks from catapult
+//handle callbacks from catapult and SPA requests from browser
 app.use(function*(next){
   if(this.request.method === "POST"){
     let m = /\/([\w\-\_]+)\/callback$/i.exec(this.request.path);
@@ -123,12 +126,31 @@ app.use(function*(next){
       debug("Handling Catapult callback for user Id %s", userId)
       let body = yield parse.json(this);      
       debug("Data from Catapult for %s: %j", userId, body);
-      wss.clients.filter(function(c){ return c.userId === userId; }).forEach(function each(client) {
+      wss.clients.filter(function(c){ return c.userId === userId; }).forEach(function(client) {
         emit(client, "new-message", body);
       });
+      this.body = "";
+      return;
     }
+  }
+  //SPA support
+  if(this.request.method === "GET" 
+    && ["/index.html", "/config.js", "/app/", "/styles/", "/node_modules/"].filter(function(t){ return this.request.path.indexOf(t) >= 0; }.bind(this)).length === 0 
+    && this.request.path !== "/"){
+    this.status = 301;
+    this.redirect("/");
+    return;
   }
   yield next;
 });
 
- server.listen(process.env.PORT || 3000, "0.0.0.0"); 
+//handle frontend
+app.use(koaStatic("./web-sms-chat-frontend"));
+
+ server.listen(process.env.PORT || 3000, "0.0.0.0", function(err){
+   if(err){
+     console.error(err.message);
+     return;
+   }
+   console.log("Ready (port: %s)",server.address().port);
+ }); 
