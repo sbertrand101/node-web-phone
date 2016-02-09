@@ -107,17 +107,37 @@ commands["signIn"] = function*(message, socket){
 
 
 /**
- * Send SMS/MMS
+ * Get messages
+ */
+commands["getMessages"] = function*(message, socket){
+  let client = getCatapultClient(message);
+  debug("Get messages");
+  let messages = (yield catapult.Message.list.bind(catapult.Message).promise(client, {size: 1000, from: message.data.phoneNumber, state: "sent"}))
+    .concat(yield catapult.Message.list.bind(catapult.Message).promise(client, {size: 1000, to: message.data.phoneNumber, state: "received"}));
+  messages.sort(function(m1, m2){
+    let time1 = new Date(m1.time);
+    let time2 = new Date(m2.time);
+    return Number(time2) - Number(time1);
+  });  
+  return messages;  
+};
+
+
+
+/**
+ * Send a message
  */
 commands["sendMessage"] = function*(message, socket){
   let client = getCatapultClient(message);
-  debug("Sending a text message");
+  debug("Sending a  message");
   return yield catapult.Message.create.bind(catapult.Message).promise(client, message.data);
 };
 
 
 
-//handle callbacks from catapult and SPA requests from browser
+/**
+ * Handle callbacks from catapult and SPA requests from browser
+ */
 app.use(function*(next){
   if(this.request.method === "POST"){
     let m = /\/([\w\-\_]+)\/callback$/i.exec(this.request.path);
@@ -144,7 +164,9 @@ app.use(function*(next){
   yield next;
 });
 
-//handle frontend
+/**
+ * Handle frontend
+ */
 app.use(koaStatic("./web-sms-chat-frontend"));
 
  server.listen(process.env.PORT || 3000, "0.0.0.0", function(err){
