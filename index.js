@@ -113,12 +113,12 @@ commands["getMessages"] = function*(message, socket){
   socket.userId = message.auth.userId;
   let client = getCatapultClient(message);
   debug("Get messages");
-  let messages = (yield catapult.Message.list.bind(catapult.Message).promise(client, {size: 1000, from: message.data.phoneNumber, state: "sent"}))
-    .concat(yield catapult.Message.list.bind(catapult.Message).promise(client, {size: 1000, to: message.data.phoneNumber, state: "received"}));
+  let messages = (yield catapult.Message.list.bind(catapult.Message).promise(client, {size: 1000, from: message.data.phoneNumber, direction: "out"}))
+    .concat(yield catapult.Message.list.bind(catapult.Message).promise(client, {size: 1000, to: message.data.phoneNumber, direction: "in"}));
   messages.sort(function(m1, m2){
     let time1 = new Date(m1.time);
     let time2 = new Date(m2.time);
-    return Number(time2) - Number(time1);
+    return Number(time1) - Number(time2);
   });  
   return messages;  
 };
@@ -170,7 +170,7 @@ app.use(function*(next){
 /**
  * Handle frontend
  */
-app.use(koaStatic("./web-sms-chat-frontend"));
+app.use(koaStatic("web-sms-chat-frontend"));
 
  server.listen(process.env.PORT || 3000, "0.0.0.0", function(err){
    if(err){
