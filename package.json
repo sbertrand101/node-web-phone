@@ -4,7 +4,7 @@
   "description": "Backend for web sms chat",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "install": "cd web-sms-chat-frontend && npm install && npm run build"
   },
   "author": "avbel",
   "license": "MIT",

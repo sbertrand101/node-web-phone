@@ -5,19 +5,9 @@ NodeJS backend for web-based chat application that features Catapult SMS and MMS
 ##Build and run
 
 ```bash
-# prepare backend
-
 git clone --recursive git@github.com:BandwidthExamples/node-web-sms-chat.git
 
 npm install
-
-# prepare frontend
-
-cd web-sms-chat-frontend
-
-npm install
-
-npm run build
 
 # run the app
 
