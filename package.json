@@ -6,6 +6,9 @@
   "scripts": {
     "install": "bash -c '(cd web-sms-chat-frontend && npm install && npm run build)'"
   },
+  "engines": {
+    "node":  "~4.2"
+  },
   "author": "avbel",
   "license": "MIT",
   "dependencies": {
