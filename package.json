@@ -20,9 +20,5 @@
     "node-bandwidth": "^1.2.4",
     "promisify-patch": "^1.0.10",
     "ws": "^1.0.1"
-  },
-  "devDependencies": {
-    "tsc": "^1.20150623.0",
-    "tsd": "^0.6.5"
   }
 }
