@@ -1,3 +1,3 @@
 [submodule "web-sms-chat-frontend"]
 	path = web-sms-chat-frontend
-	url = git@github.com:BandwidthExamples/web-sms-chat-frontend.git
+	url = https://github.com/BandwidthExamples/web-sms-chat-frontend.git
