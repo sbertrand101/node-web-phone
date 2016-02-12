@@ -4,7 +4,8 @@
   "description": "Backend for web sms chat",
   "main": "index.js",
   "scripts": {
-    "install": "./build-frontend.sh"
+    "install": "./build-frontend.sh",
+    "start": "node index.js"
   },
   "engines": {
     "node": "~4.2"
