@@ -14,6 +14,7 @@ else
   [[ -d web-sms-chat-frontend-master ]] && mv web-sms-chat-frontend-master web-sms-chat-frontend
 fi
 
+ls
 
 cd ./web-sms-chat-frontend
 npm install
