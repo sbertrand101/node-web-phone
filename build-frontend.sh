@@ -14,12 +14,13 @@ else
   [[ -d ./web-sms-chat-frontend-master ]] && mv ./web-sms-chat-frontend-master ./web-sms-chat-frontend
 fi
 
-ls
 
 if [ -d ./web-sms-chat-frontend ]; then
+  echo "Building frontend"
   cd ./web-sms-chat-frontend
-  npm install
-  npm run build
+  ls
+  npm install || true
+  npm run build || true
 else
   echo  "Missing frontend directory!!!"
   exit 1
