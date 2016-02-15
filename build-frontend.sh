@@ -23,9 +23,8 @@ fi
 if [ -d ./web-sms-chat-frontend ]; then
   echo "Building frontend"
   cd ./web-sms-chat-frontend
-  ls
-  npm install || true
-  npm run build || true
+  npm install
+  npm run build
 else
   echo  "Missing frontend directory!!!"
   exit 1
