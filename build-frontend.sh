@@ -12,6 +12,11 @@ else
   # for "master" and "develop" branches
   [[ -d ./web-sms-chat-frontend-develop ]] && mv ./web-sms-chat-frontend-develop ./web-sms-chat-frontend
   [[ -d ./web-sms-chat-frontend-master ]] && mv ./web-sms-chat-frontend-master ./web-sms-chat-frontend
+
+  # "features" of heroku
+  [[ -d ./web-sms-chat-frontend/web-sms-chat-frontend-develop ]] && mv ./web-sms-chat-frontend/web-sms-chat-frontend-develop/* ./web-sms-chat-frontend/
+  [[ -d ./web-sms-chat-frontend/web-sms-chat-frontend-master ]] && mv ./web-sms-chat-frontend/web-sms-chat-frontend-master/* ./web-sms-chat-frontend/
+
 fi
 
 
