@@ -9,6 +9,8 @@ const catapult = require("node-bandwidth");
 const koa = require("koa");
 const koaStatic = require("koa-static");
 const http = require("http");
+const formidable = require("koa-formidable");
+const fs = require("fs");
 
 require("promisify-patch").patch();
 
@@ -39,7 +41,7 @@ wss.on("connection", function (socket) {
     debug("Received new message %s", json);
     let message = {};
     try {
-      message = JSON.parse(json); 
+      message = JSON.parse(json);
     }
     catch (err) {
       console.error("Invalid format of received data: %s", json);
@@ -97,12 +99,12 @@ commands["signIn"] = function*(message, socket){
      let number = ((yield catapult.AvailableNumber.searchLocal.bind(catapult.AvailableNumber)
       .promise(client, {city: "Cary", state: "NC", quantity: 1}))[0] || {}).number;
      yield catapult.PhoneNumber.create.bind(catapult.PhoneNumber).promise(client, {number: number, applicationId: applicationId});
-     phoneNumber = number; 
+     phoneNumber = number;
    }
    socket.userId = message.auth.userId;
    return {
      phoneNumber: phoneNumber
-   };  
+   };
 };
 
 
@@ -119,8 +121,8 @@ commands["getMessages"] = function*(message, socket){
     let time1 = new Date(m1.time);
     let time2 = new Date(m2.time);
     return Number(time1) - Number(time2);
-  });  
-  return messages;  
+  });
+  return messages;
 };
 
 
@@ -146,7 +148,7 @@ app.use(function*(next){
     if(m){
       let userId = m[1];
       debug("Handling Catapult callback for user Id %s", userId)
-      let body = yield parse.json(this);      
+      let body = yield parse.json(this);
       debug("Data from Catapult for %s: %j", userId, body);
       wss.clients.filter(function(c){ return c.userId === userId; }).forEach(function(client) {
         debug("Sending Catapult data to websocket client");
@@ -155,10 +157,20 @@ app.use(function*(next){
       this.body = "";
       return;
     }
+    if(this.request.path === "/upload"){
+      debug("Uploading file");
+      let file = (yield formidable.parse(this)).files.file;
+      let fileName = `${Math.random().toString(36).substring(5)}-${file.name}`;
+      let auth = JSON.parse(this.request.headers.authorization);
+      yield catapult.Media.upload.bind(catapult.Media).promise(new catapult.Client(auth), fileName, file.path, file.type);
+      yield fs.unlink.promise(file.path);
+      this.body = {fileName: fileName};
+      return;
+    }
   }
   //SPA support
-  if(this.request.method === "GET" 
-    && ["/index.html", "/config.js", "/app/", "/styles/", "/node_modules/"].filter(function(t){ return this.request.path.indexOf(t) >= 0; }.bind(this)).length === 0 
+  if(this.request.method === "GET"
+    && ["/index.html", "/config.js", "/app/", "/styles/", "/node_modules/"].filter(function(t){ return this.request.path.indexOf(t) >= 0; }.bind(this)).length === 0
     && this.request.path !== "/"){
     this.status = 301;
     this.redirect("/");
@@ -178,4 +190,4 @@ app.use(koaStatic("web-sms-chat-frontend"));
      return;
    }
    console.log("Ready (port: %s)",server.address().port);
- }); 
+ });
