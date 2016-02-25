@@ -229,13 +229,16 @@ commands["signIn"] = function* (message, socket) {
   sipDomain = `${domainName}.bwapp.bwsip.io`;
 
   debug("Getting endpoint %s", userName);
-  yield getEndpoint(domain, phoneNumber, userName, applicationId, password);
+  let endpoint = yield getEndpoint(domain, phoneNumber, userName, applicationId, password);
+  
+  debug("Getting auth token");
+  let auth = yield endpoint.createAuthToken.bind(endpoint).promise();
 
   setUserData(socket, message);
   return {
     phoneNumber: phoneNumber,
     userName: userName,
-    password: password,
+    authToken: auth.token,
     domain: sipDomain
   };
 };
@@ -393,7 +396,7 @@ app.use(function* (next) {
   }
   //SPA support
   if (this.request.method === "GET"
-    && ["/index.html", "/config.js", "/app/", "/styles/", "/node_modules/", "/jspm_packages/", "/sounds/", "/vendor.js"].filter(function (t) { return this.request.path.indexOf(t) >= 0; }.bind(this)).length === 0
+    && ["/index.html", "/config.js", "/app/", "/styles/", "/node_modules/", "/jspm_packages/", "/sounds/", "/vendor/"].filter(function (t) { return this.request.path.indexOf(t) >= 0; }.bind(this)).length === 0
     && this.request.path !== "/") {
     this.status = 301;
     this.redirect("/");
