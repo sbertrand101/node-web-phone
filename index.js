@@ -146,9 +146,10 @@ function setUserData(socket, message){
   if(socket.userId){
     return;
   }
+  debug("Set user's data for socket");
   socket.userId = message.auth.userId;
   let user = activeUsers[message.auth.userId] 
-    || {authToken: message.auth.authToken, authSecret: message.auth.authSecret, counter: 0};
+    || {apiToken: message.auth.apiToken, apiSecret: message.auth.apiSecret, counter: 0};
   user.counter ++;
   activeUsers[message.auth.userId] = user;
 }
@@ -191,7 +192,7 @@ wss.on("connection", function (socket) {
   socket.on("close", function () {
     debug("Closed websocket connection for %s", socket.userId);
     let user = activeUsers[socket.userId];
-    if(user && (user.counter --) === 0){
+    if(user && (-- user.counter) === 0){
       debug("User %s has no active connections");
       co(hangUpCalls(getCatapultClientByUserId(socket.userId), user)).catch(function(err){
         debug("Error on hang up call: %s", err.message || err);
@@ -360,6 +361,7 @@ function* processHangup(client, body, userId) {
  * Handle callbacks from catapult and SPA requests from browser
  */
 app.use(function* (next) {
+  debug("%s - %s", this.request.method, this.request.path);
   if (this.request.method === "POST") {
     let m = /\/([\w\-\_]+)\/(call|message)\/callback$/i.exec(this.request.path);
     if (m) {
