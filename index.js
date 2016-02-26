@@ -371,7 +371,6 @@ function* processHangup(client, body, userId) {
  * Handle callbacks from catapult and SPA requests from browser
  */
 app.use(function* (next) {
-  debug("%s - %s", this.request.method, this.request.path);
   if (this.request.method === "POST") {
     let m = /\/([\w\-\_]+)\/(call|message)\/callback$/i.exec(this.request.path);
     if (m) {
