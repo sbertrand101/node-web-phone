@@ -19,7 +19,6 @@ let server = http.createServer(app.callback());
 let wss = new ws.Server({ server: server, path: "/smschat" });
 
 let commands = {};
-let sipDomain = "";
 
 let activeUsers = {};
 
@@ -193,7 +192,7 @@ wss.on("connection", function (socket) {
     debug("Closed websocket connection for %s", socket.userId);
     let user = activeUsers[socket.userId];
     if(user && (-- user.counter) === 0){
-      debug("User %s has no active connections");
+      debug("User %s has no active connections", socket.userId);
       co(hangUpCalls(getCatapultClientByUserId(socket.userId), user)).catch(function(err){
         debug("Error on hang up call: %s", err.message || err);
       });
@@ -226,7 +225,7 @@ commands["signIn"] = function* (message, socket) {
   debug("Getting domain");
   let domain = yield getDomain(client, domainName);
   const password = domain.id.substr(3, 20);
-  sipDomain = `${domainName}.bwapp.bwsip.io`;
+  const sipDomain = `${domainName}.bwapp.bwsip.io`;
 
   debug("Getting endpoint %s", userName);
   let endpoint = yield getEndpoint(domain, phoneNumber, userName, applicationId, password);
@@ -278,14 +277,14 @@ commands["sendMessage"] = function* (message, socket) {
 /**
  * Callback from Catapult for calls
  */
-function* processCallEvent(userId, body, baseUrl) {
+function* processCallEvent(userId, body, baseUrl, sipDomain) {
   let client = getCatapultClientByUserId(userId);
   if (!client) {
     return;
   }
   switch (body.eventType) {
     case "incomingcall":
-      yield processIncomingCall(client, body, userId, baseUrl);
+      yield processIncomingCall(client, body, userId, baseUrl, sipDomain);
       break;
     case "hangup":
       yield processHangup(client, body, userId);
@@ -297,14 +296,15 @@ function* processCallEvent(userId, body, baseUrl) {
 /**
  * Incoming calls
  */
-function* processIncomingCall(client, body, userId, baseUrl) {
+function* processIncomingCall(client, body, userId, baseUrl, sipDomain) {
   if (body.tag) {
     return;
   }
-  const regex = new RegExp("sip\:chat\-(\d+)@" + sipDomain);
+  const regex = new RegExp("sip\\:chat\\-(\\d+)@" + sipDomain.replace(/\./gi, "\\."));
   let toNumber = body.to;
   let fromNumber = body.from;
   let m = regex.exec(body.from);
+  debug("Current leg: %s -> %s", fromNumber, toNumber);
   if (m) {
     //outgoing call from web ui
     fromNumber = `+${m[1]}`;
@@ -315,6 +315,11 @@ function* processIncomingCall(client, body, userId, baseUrl) {
     toNumber = `sip:chat-${body.to.substr(1) }@${sipDomain}`
   }
   let currentCall = yield catapult.Call.get.bind(catapult.Call).promise(client, body.callId);
+  if(!activeUsers[userId]){
+    //user closed web ui
+    yield currentCall.hangUp.bind(currentCall).promise();
+    return;
+  }
   yield currentCall.answerOnIncoming.bind(currentCall).promise();
   yield currentCall.playAudio.bind(currentCall).promise({
     fileUrl: `${baseUrl}/sounds/ring.mp3`,
@@ -327,6 +332,7 @@ function* processIncomingCall(client, body, userId, baseUrl) {
   let activeCalls = activeUsers[userId].activeCalls || {};
   activeCalls[body.callId] = bridge.id;
   activeUsers[userId].activeCalls = activeCalls;
+  debug("Another leg: %s -> %s", fromNumber, toNumber);
   let anotherCall = yield catapult.Call.create.bind(catapult.Call).promise(client, {
     from: fromNumber,
     to: toNumber,
@@ -334,6 +340,7 @@ function* processIncomingCall(client, body, userId, baseUrl) {
     callbackUrl: `${baseUrl}/${userId}/call/callback`,
     tag: body.callId
   });
+  debug("Calls has been bridged");
   activeCalls[anotherCall.id] = bridge.id;
 }
 
@@ -378,7 +385,7 @@ app.use(function* (next) {
       });
       if (m[2] == "call") {
         //call events
-        yield processCallEvent(userId, body, "http://" + this.req.headers.host);
+        yield processCallEvent(userId, body, "http://" + this.req.headers.host, `${this.req.headers.host.split(".")[0]}.bwapp.bwsip.io`);
       }
       this.body = "";
       return;
