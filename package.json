@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "install": "./build-frontend.sh",
-    "start": "node index.js"
+    "start": "nf start web"
   },
   "engines": {
     "node": "~4.2"
@@ -16,6 +16,7 @@
     "co": "^4.6.0",
     "co-body": "^4.0.0",
     "debug": "^2.2.0",
+    "foreman": "^1.4.1",
     "koa": "^1.1.2",
     "koa-formidable": "^1.0.0",
     "koa-static": "^2.0.0",
