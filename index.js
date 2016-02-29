@@ -90,7 +90,7 @@ function* getPhoneNumber(client, applicationId) {
 }
 
 /**
- * Return Catapult domain (and create if if need)  
+ * Return Catapult domain (and create if if need)
  */
 function* getDomain(client, domainName) {
   let domain = (yield catapult.Domain.list.bind(catapult.Domain).promise(client)).filter(d => d.name == domainName)[0];
@@ -147,7 +147,7 @@ function setUserData(socket, message){
   }
   debug("Set user's data for socket");
   socket.userId = message.auth.userId;
-  let user = activeUsers[message.auth.userId] 
+  let user = activeUsers[message.auth.userId]
     || {apiToken: message.auth.apiToken, apiSecret: message.auth.apiSecret, counter: 0};
   user.counter ++;
   activeUsers[message.auth.userId] = user;
@@ -229,7 +229,7 @@ commands["signIn"] = function* (message, socket) {
 
   debug("Getting endpoint %s", userName);
   let endpoint = yield getEndpoint(domain, phoneNumber, userName, applicationId, password);
-  
+
   debug("Getting auth token");
   let auth = yield endpoint.createAuthToken.bind(endpoint).promise();
 
@@ -271,6 +271,15 @@ commands["sendMessage"] = function* (message, socket) {
   let result = yield catapult.Message.create.bind(catapult.Message).promise(client, message.data);
   setUserData(socket, message);
   return result;
+};
+
+/**
+ * Reconnect on losting websocket connection
+ */
+commands["reconnect"] = function* (message, socket) {
+  debug("Reconnect");
+  setUserData(socket, message);
+  return {};
 };
 
 
