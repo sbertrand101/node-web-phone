@@ -423,7 +423,7 @@ app.use(function* (next) {
 /**
  * Handle frontend
  */
-app.use(koaStatic("web-sms-chat-frontend"));
+app.use(koaStatic("web-phone-frontend"));
 
 server.listen(process.env.PORT || 3000, "0.0.0.0", function (err) {
   if (err) {

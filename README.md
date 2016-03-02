@@ -1,6 +1,6 @@
-#node-web-sms-chat
+#node-web-phone
 
-NodeJS backend for web-based chat application that features Catapult SMS and MMS capabilities.
+NodeJS backend for web-based phone application.
 
 Demos uses of the:
 * [Catapult Node SDK](https://github.com/bandwidthcom/node-bandwidth)
@@ -25,7 +25,7 @@ Demos uses of the:
 ```bash
 # clone the app with submodules
 
-git clone --recursive git@github.com:BandwidthExamples/node-web-sms-chat.git
+git clone --recursive git@github.com:BandwidthExamples/node-web-phone.git
 
 # install dependencies
 

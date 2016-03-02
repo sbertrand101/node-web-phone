@@ -1,7 +1,7 @@
 {
-  "name": "node-web-sms-chat",
+  "name": "node-web-phone",
   "version": "1.0.0",
-  "description": "Backend for web sms chat",
+  "description": "Backend for web phone",
   "main": "index.js",
   "scripts": {
     "install": "./build-frontend.sh",
