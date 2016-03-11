@@ -210,7 +210,7 @@ commands["signIn"] = function* (message, socket) {
   message.auth = message.data;
   let client = getCatapultClient(message);
   const applicationName = `web-sms-chat on ${socket.upgradeReq.headers.host}`;
-  const domainName = socket.upgradeReq.headers.host.split(".")[0];
+  const domainName = socket.upgradeReq.headers.host.split(".")[0].substr(0, 15);
   debug("Getting account's balance");
   let result = yield catapult.Account.get.bind(catapult.Account).promise(client);
   if (result.balance <= 0) {
@@ -393,7 +393,7 @@ app.use(function* (next) {
       });
       if (m[2] == "call") {
         //call events
-        yield processCallEvent(userId, body, "http://" + this.req.headers.host, `${this.req.headers.host.split(".")[0]}.bwapp.bwsip.io`);
+        yield processCallEvent(userId, body, "http://" + this.req.headers.host, `${this.req.headers.host.split(".")[0].substr(0, 15)}.bwapp.bwsip.io`);
       }
       this.body = "";
       return;
@@ -411,7 +411,7 @@ app.use(function* (next) {
   }
   //SPA support
   if (this.request.method === "GET"
-    && ["/index.html", "/config.js", "/build.", "/app/", "/styles/", "/node_modules/", "/jspm_packages/", "/sounds/", "/vendor/"].filter(function (t) { return this.request.path.indexOf(t) >= 0; }.bind(this)).length === 0
+    && ["/index.html", "/config.js", "/build.", "/app/", "/styles/", "/node_modules/", "/jspm_packages/", "/sounds/", "/vendor/", ".map"].filter(function (t) { return this.request.path.indexOf(t) >= 0; }.bind(this)).length === 0
     && this.request.path !== "/") {
     this.status = 301;
     this.redirect("/");
