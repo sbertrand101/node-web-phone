@@ -401,7 +401,7 @@ app.use(function* (next) {
     if (this.request.path === "/upload") {
       debug("Uploading file");
       let file = (yield formidable.parse(this)).files.file;
-      let fileName = `${Math.random().toString(36).substring(5) }-${file.name}`;
+      let fileName = Math.random().toString(36).substring(5);
       let auth = JSON.parse(this.request.headers.authorization);
       yield catapult.Media.upload.bind(catapult.Media).promise(new catapult.Client(auth), fileName, file.path, file.type);
       yield fs.unlink.promise(file.path);
