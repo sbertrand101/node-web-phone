@@ -213,9 +213,9 @@ commands["signIn"] = function* (message, socket) {
   const domainName = socket.upgradeReq.headers.host.split(".")[0].substr(0, 15);
   debug("Getting account's balance");
   let result = yield catapult.Account.get.bind(catapult.Account).promise(client);
-  if (result.balance <= 0) {
-    throw new Error("You have no enough amount of money on your account");
-  }
+  //if (result.balance <= 0) {
+    //throw new Error("You have no enough amount of money on your account");
+  //}
   debug("Getting application id");
   let applicationId = yield getApplicationId(client, applicationName, message, socket);
   debug("Getting phone number");
