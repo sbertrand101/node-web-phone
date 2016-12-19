@@ -11,6 +11,7 @@ const koaStatic = require("koa-static");
 const http = require("http");
 const formidable = require("koa-formidable");
 const fs = require("fs");
+const crypto = require("crypto");
 
 require("promisify-patch").patch();
 
@@ -210,9 +211,12 @@ commands["signIn"] = function* (message, socket) {
   message.auth = message.data;
   let client = getCatapultClient(message);
   const applicationName = `web-sms-chat on ${socket.upgradeReq.headers.host}`;
-  const domainName = socket.upgradeReq.headers.host.split(".")[0].substr(0, 15);
-  debug("Getting account's balance");
-  let result = yield catapult.Account.get.bind(catapult.Account).promise(client);
+  // now domain name will be unique for host and user
+  const domainName = socket.upgradeReq.headers.host[0] + crypto.createHash("sha1")
+    .update(`${socket.upgradeReq.headers.host}-${message.auth.userId}`)
+    .digest("hex").substr(0, 14); //domain name should be less 16 symbols (and first symbol should be letter)
+  //debug("Getting account's balance");
+  //let result = yield catapult.Account.get.bind(catapult.Account).promise(client);
   //if (result.balance <= 0) {
     //throw new Error("You have no enough amount of money on your account");
   //}
@@ -222,7 +226,7 @@ commands["signIn"] = function* (message, socket) {
   let phoneNumber = yield getPhoneNumber(client, applicationId, message, socket);
   const userName = `chat-${phoneNumber.substr(1) }`;
 
-  debug("Getting domain");
+  debug("Getting domain %s", domainName);
   let domain = yield getDomain(client, domainName);
   const password = domain.id.substr(3, 20);
   const sipDomain = `${domainName}.bwapp.bwsip.io`;
